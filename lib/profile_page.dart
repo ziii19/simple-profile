@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:simple_profile/image_helper.dart';
+import 'package:simple_profile/resources/add_data.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -10,8 +13,24 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  Uint8List? _image;
   TextEditingController nameController = TextEditingController();
   TextEditingController bioController = TextEditingController();
+
+  void pickImage(ImageSource source) async {
+    final img = getImage(source);
+
+    setState(() {
+      _image = img;
+    });
+  }
+
+  void saveProgile() async {
+    String name = nameController.text;
+    String bio = bioController.text;
+    await StoreData().saveData(name, bio, _image!);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,7 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               InkWell(
                 onTap: () {
-                  pickImage();
+                  imageSheet();
                 },
                 child: Stack(
                   children: [
@@ -88,7 +107,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  pickImage() {
+  imageSheet() {
     showModalBottomSheet(
       context: context,
       builder: (context) => Padding(
@@ -104,7 +123,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               child: IconButton(
                   onPressed: () async {
-                    await ImageHelper.getImage(ImageSource.camera);
+                    pickImage(ImageSource.camera);
                   },
                   icon: const Icon(
                     Icons.camera_alt_rounded,
@@ -119,7 +138,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               child: IconButton(
                   onPressed: () async {
-                    await ImageHelper.getImage(ImageSource.gallery);
+                    pickImage(ImageSource.gallery);
                   },
                   icon: const Icon(
                     Icons.filter,

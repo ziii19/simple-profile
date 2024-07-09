@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -16,19 +18,39 @@ class _ProfilePageState extends State<ProfilePage> {
   Uint8List? _image;
   TextEditingController nameController = TextEditingController();
   TextEditingController bioController = TextEditingController();
+  bool isLoading = false; // Status loading
 
   void pickImage(ImageSource source) async {
-    final img = getImage(source);
+    final img = await getImage(source);
 
     setState(() {
       _image = img;
     });
   }
 
-  void saveProgile() async {
+  Future<String> saveProfile() async {
+    setState(() {
+      isLoading = true; // Mulai loading
+    });
+
     String name = nameController.text;
     String bio = bioController.text;
-    await StoreData().saveData(name, bio, _image!);
+    String message = 'Failed';
+    if (name.isNotEmpty && bio.isNotEmpty && _image!.isNotEmpty) {
+      await StoreData().saveData(name, bio, _image!);
+      message = "Upload Success";
+    } else {
+      message = 'Upload Failed';
+    }
+
+    setState(() {
+      isLoading = false; // Selesai loading
+      nameController.clear(); // Mengosongkan form nama
+      bioController.clear(); // Mengosongkan form bio
+      _image = null;
+    });
+
+    return message;
   }
 
   @override
@@ -48,18 +70,24 @@ class _ProfilePageState extends State<ProfilePage> {
                     Container(
                       width: 110,
                       height: 110,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.account_circle_sharp,
-                        size: 110,
-                        color: Colors.blueAccent.withOpacity(.8),
-                      ),
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          image: _image != null
+                              ? DecorationImage(
+                                  image: MemoryImage(_image!),
+                                  fit: BoxFit.cover)
+                              : null),
+                      child: _image != null
+                          ? null
+                          : Icon(
+                              Icons.account_circle_sharp,
+                              size: 110,
+                              color: Colors.blueAccent.withOpacity(.8),
+                            ),
                     ),
                     const Positioned(
-                        top: 80,
-                        left: 70,
+                        top: 85,
+                        left: 75,
                         child: Icon(Icons.add_a_photo_rounded))
                   ],
                 ),
@@ -88,18 +116,24 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
               const SizedBox(height: 30),
-              ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      fixedSize: const Size(200, 30),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+              isLoading // Jika sedang loading
+                  ? const CircularProgressIndicator() // Tampilkan animasi loading
+                  : ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          fixedSize: const Size(200, 30),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          )),
+                      onPressed: () async {
+                        var result = await saveProfile();
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(SnackBar(content: Text(result)));
+                      },
+                      child: const Text(
+                        'Save Profile',
+                        style: TextStyle(color: Colors.white),
                       )),
-                  onPressed: () {},
-                  child: const Text(
-                    'Save Profile',
-                    style: TextStyle(color: Colors.white),
-                  ))
             ],
           )
         ],
@@ -124,6 +158,8 @@ class _ProfilePageState extends State<ProfilePage> {
               child: IconButton(
                   onPressed: () async {
                     pickImage(ImageSource.camera);
+                    Future.delayed(const Duration(milliseconds: 300))
+                        .then((value) => Navigator.pop(context));
                   },
                   icon: const Icon(
                     Icons.camera_alt_rounded,
@@ -139,6 +175,8 @@ class _ProfilePageState extends State<ProfilePage> {
               child: IconButton(
                   onPressed: () async {
                     pickImage(ImageSource.gallery);
+                    Future.delayed(const Duration(milliseconds: 300))
+                        .then((value) => Navigator.pop(context));
                   },
                   icon: const Icon(
                     Icons.filter,

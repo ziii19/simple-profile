@@ -8,7 +8,7 @@ final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
 class StoreData {
   Future<String> uploadImage(String filename, Uint8List file) async {
-    Reference ref = _storage.ref().child(filename);
+    Reference ref = _storage.ref().child(filename).child('${DateTime.now()}');
     UploadTask uploadTask = ref.putData(file);
     TaskSnapshot snapshot = await uploadTask;
 
